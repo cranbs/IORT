@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Author  : LG
+# copy from @Author  : LG
 
 import os
 from PIL import Image
@@ -63,7 +63,7 @@ class Annotation:
                 info = dataset.get('info', {})
                 description = info.get('description', '')
                 if description == 'IORT':
-                    # ISAT格式json
+                    # IORT格式json
                     objects = dataset.get('objects', [])
                     self.img_name = info.get('name', '')
                     width = info.get('width', None)
@@ -89,8 +89,8 @@ class Annotation:
                         obj = Object(category, group, segmentation, area, layer, bbox, iscrowd, note)
                         self.objects.append(obj)
                 else:
-                    # 不再支持直接打开labelme标注文件（在菜单栏-tool-convert中提供了isat<->labelme相互转换工具）
-                    print('Warning: The file {} is not a ISAT json.'.format(self.label_path))
+                    # 不再支持直接打开labelme标注文件（在菜单栏-tool-convert中提供了IORT<->labelme相互转换工具）
+                    print('Warning: The file {} is not a IORT json.'.format(self.label_path))
         return self
 
     def save_annotation(self):

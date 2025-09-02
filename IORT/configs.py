@@ -2,6 +2,11 @@ import yaml
 from enum import Enum
 import os
 
+IORT_ROOT = os.path.split(os.path.abspath(__file__))[0]
+CHECKPOINT_ROOT = os.path.dirname(IORT_ROOT)
+CHECKPOINT_PATH = os.path.join(CHECKPOINT_ROOT, 'checkpoints')
+SHORTCUT_FILE = os.path.join(IORT_ROOT, 'shortcut.yaml')
+
 class STATUSMode(Enum):
     VIEW = 0
     CREATE = 1

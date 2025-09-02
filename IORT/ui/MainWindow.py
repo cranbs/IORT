@@ -180,6 +180,13 @@ class Ui_MainWindow(object):
         self.actionSegment_anything_point.setFont(font)
         self.actionSegment_anything_point.setObjectName("actionSegment_anything_point")
         
+        self.actionModel_manage = QtWidgets.QAction(MainWindow)
+        icon18 = QtGui.QIcon()
+        icon18.addPixmap(QtGui.QPixmap("icons/列表_list-middle.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionModel_manage.setIcon(icon18)
+        self.actionModel_manage.setFont(font)
+        self.actionModel_manage.setObjectName("actionModel_manage")
+        
         #-----设置窗口--------
         self.results = QtWidgets.QDockWidget(MainWindow)
         font = QtGui.QFont()
@@ -293,6 +300,8 @@ class Ui_MainWindow(object):
         self.menuEdit.addAction(self.actionDelete)
         self.menuEdit.addAction(self.actionSave)
         
+        self.menuSAM.addAction(self.actionModel_manage)
+        
         self.menuView.addAction(self.actionFitWindow)
         self.menuView.addAction(self.actionVisible)
         self.menuView.addAction(self.actionChangeView)
@@ -356,6 +365,8 @@ class Ui_MainWindow(object):
         self.actionCancel.setText(_translate("MainWindow", "Cancel draw mask"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
         self.actionDelete.setText(_translate("MainWindow", "Delete"))
+        
+        self.actionModel_manage.setText(_translate("MainWindow", "Model manage"))
         
         self.actionFitWindow.setText(_translate("MainWindow", "Fit Window"))
         self.actionVisible.setText(_translate("MainWindow", "Visible"))

@@ -12,7 +12,7 @@ from hydra import compose
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 
-from ISAT.segment_any import sam2
+from IORT.segment_any import sam2
 
 # Check if the user is running Python from the parent directory of the sam2 repo
 # (i.e. the directory where this repo is cloned into) -- this is not supported since
@@ -108,7 +108,7 @@ def build_sam2_video_predictor(
     **kwargs,
 ):
     hydra_overrides = [
-        "++model._target_=ISAT.segment_any.sam2.sam2_video_predictor.SAM2VideoPredictor",
+        "++model._target_=IORT.segment_any.sam2.sam2_video_predictor.SAM2VideoPredictor",
     ]
     if apply_postprocessing:
         hydra_overrides_extra = hydra_overrides_extra.copy()

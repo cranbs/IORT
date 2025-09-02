@@ -3,7 +3,7 @@ from IORT.rect import Rect
 from enum import Enum
 from typing import List
 from IORT.widgets.polygon import Polygon, PromptPoint
-from IORT.configs import STATUSMode, DRAWMode, CONTOURMode
+from IORT.configs import STATUSMode, DRAWMode, CONTOURMode, CLICKMode
 import time
 from PIL import Image
 import numpy as np
@@ -40,7 +40,11 @@ class Scene(QtWidgets.QGraphicsScene):
     
     def load_image(self, image_path: str):
         self.clear()
+        if self.mainwindow.use_segment_anything:
+            self.mainwindow.segany.reset_image()
+        
         image = Image.open(image_path)
+        image = image.convert('RGB')
         self.image_data = np.array(image)
         self.image_item = QtWidgets.QGraphicsPixmapItem()
         self.image_item.setZValue(0)
@@ -67,6 +71,12 @@ class Scene(QtWidgets.QGraphicsScene):
     def start_draw_polygon(self):
         self.draw_mode = DRAWMode.POLYGON
         self.start_draw()
+    
+    def change_click_to_positive(self):
+        self.click = CLICKMode.POSITIVE
+
+    def change_click_to_negative(self):
+        self.click = CLICKMode.NEGATIVE
         
     def start_draw(self):
         if self.mode != STATUSMode.VIEW:
@@ -133,11 +143,10 @@ class Scene(QtWidgets.QGraphicsScene):
                     contours = [largest_contour]
 
                 for index, contour in enumerate(contours):
-                    # polydp
-                    if self.mainwindow.cfg['software']['use_polydp']:
-                        epsilon_factor = 0.001
-                        epsilon = epsilon_factor * cv2.arcLength(contour, True)
-                        contour = cv2.approxPolyDP(contour, epsilon, True)
+
+                    epsilon_factor = 0.001
+                    epsilon = epsilon_factor * cv2.arcLength(contour, True)
+                    contour = cv2.approxPolyDP(contour, epsilon, True)
 
                     if self.current_graph is None:
                         self.current_graph = Polygon()
@@ -219,17 +228,56 @@ class Scene(QtWidgets.QGraphicsScene):
         self.update_mask()
     
     def update_mask(self):
+        if not self.mainwindow.use_segment_anything:
+            return
+        
         if self.image_data is None:
             return
         if not (self.image_data.ndim == 3 and self.image_data.shape[-1] == 3):
             return
-        mask_image = np.zeros(self.image_data.shape, dtype=np.uint8)
-        mask_image = cv2.addWeighted(self.image_data, 1, mask_image, 0, 0)
+        if len(self.click_points) > 0 and len(self.click_points_mode) > 0:
+            masks = self.mainwindow.segany.predict_with_point_prompt(self.click_points, self.click_points_mode)
+            self.masks = masks
+            color = np.array([0, 0, 255])
+            h, w = masks.shape[-2:]
+            mask_image = masks.reshape(h, w, 1) * color.reshape(1, 1, -1)
+            mask_image = mask_image.astype("uint8")
+            mask_image = cv2.cvtColor(mask_image, cv2.COLOR_BGR2RGB)
+            mask_image = cv2.addWeighted(self.image_data, self.mask_alpha, mask_image, 1, 0)
+        elif self.current_sam_rect is not None:
+            point1 = self.current_sam_rect.points[0]
+            point2 = self.current_sam_rect.points[1]
+            box = np.array([min(point1.x(), point2.x()),
+                            min(point1.y(), point2.y()),
+                            max(point1.x(), point2.x()),
+                            max(point1.y(), point2.y()),
+                            ])
+            masks = self.mainwindow.segany.predict_with_box_prompt(box)
+
+            self.masks = masks
+            color = np.array([0, 0, 255])
+            h, w = masks.shape[-2:]
+            mask_image = masks.reshape(h, w, 1) * color.reshape(1, 1, -1)
+            mask_image = mask_image.astype("uint8")
+            mask_image = cv2.cvtColor(mask_image, cv2.COLOR_BGR2RGB)
+            # 这里通过调整原始图像的权重self.mask_alpha，来调整mask的明显程度。
+            mask_image = cv2.addWeighted(self.image_data, self.mask_alpha, mask_image, 1, 0)
+        else:
+            mask_image = np.zeros(self.image_data.shape, dtype=np.uint8)
+            mask_image = cv2.addWeighted(self.image_data, 1, mask_image, 0, 0)
         mask_image = QtGui.QImage(mask_image[:], mask_image.shape[1], mask_image.shape[0], mask_image.shape[1] * 3,
                                   QtGui.QImage.Format_RGB888)
         mask_pixmap = QtGui.QPixmap(mask_image)
         if self.mask_item is not None:
             self.mask_item.setPixmap(mask_pixmap)
+        
+        # mask_image = np.zeros(self.image_data.shape, dtype=np.uint8)
+        # mask_image = cv2.addWeighted(self.image_data, 1, mask_image, 0, 0)
+        # mask_image = QtGui.QImage(mask_image[:], mask_image.shape[1], mask_image.shape[0], mask_image.shape[1] * 3,
+        #                           QtGui.QImage.Format_RGB888)
+        # mask_pixmap = QtGui.QPixmap(mask_image)
+        # if self.mask_item is not None:
+        #     self.mask_item.setPixmap(mask_pixmap)
     
     def mousePressEvent(self, event: 'QtWidgets.QGraphicsSceneMouseEvent'):
         pos = event.scenePos()
