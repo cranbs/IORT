@@ -1,0 +1,31 @@
+# 忽略 checkpoints 文件夹下的所有内容
+checkpoints/
+LaMa_test_images
+
+# 但如果你想保留 checkpoints 目录结构，可以加一个空的 .gitkeep 文件
+!checkpoints/.gitkeep
+
+# 常见忽略规则（Python 项目）
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# 虚拟环境
+.venv/
+env/
+venv/
+
+# Jupyter Notebook 缓存
+.ipynb_checkpoints/
+
+# 数据文件（如果不想放进 Git）
+*.npz
+*.pkl
+*.csv
+*.h5
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
