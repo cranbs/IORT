@@ -1,10 +1,10 @@
 ## IORT-Interactive Object Removal Tool based on SAM and LaMa
 
-## Removal Anything
+## SAM Mode
 
-***
+![SAM_Mode](./displays/SAM_Mode.gif)
 
-## Fill Anything
+## Polygon Mode
 
 ***
 
