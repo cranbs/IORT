@@ -136,8 +136,6 @@ class Polygon(QtWidgets.QGraphicsPolygonItem):
         self.points[index] = self.mapFromScene(point)
 
         self.redraw()
-        # if self.scene().mainwindow.cfg['software']['real_time_area']:
-        #     self.area = self.calculate_area()
         # if self.scene().mainwindow.load_finished and not self.is_drawing:
         #     self.scene().mainwindow.set_saved_state(False)
 
@@ -236,12 +234,17 @@ class Polygon(QtWidgets.QGraphicsPolygonItem):
             vertex.setPen(QtGui.QPen(vertex_color, self.line_width))
             vertex.setBrush(vertex_color)
 
-    def set_drawed(self, color:QtGui.QColor, layer=None):
+    def set_drawed(self, category, group, iscrowd, note, color:QtGui.QColor, layer=None):
         self.is_drawing = False
+        self.category = category
+        if isinstance(group, str):
+            group = 0 if group == '' else int(group)
+        self.group = group
+        self.iscrowd = iscrowd
+        self.note = note
 
         self.color = color
-        # if not self.scene().mainwindow.cfg['software']['show_edge']:
-        #     color.setAlpha(0)
+        color.setAlpha(0)
         self.setPen(QtGui.QPen(color, self.line_width))
         self.color.setAlpha(self.nohover_alpha)
         self.setBrush(self.color)
@@ -272,7 +275,7 @@ class Polygon(QtWidgets.QGraphicsPolygonItem):
         self.area = object.area
 
     def to_object(self):
-        if self.is_drawing or sip.isdeleted(self):
+        if self.is_drawing:
             return None
         segmentation = []
         for point in self.points:

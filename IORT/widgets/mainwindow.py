@@ -13,6 +13,7 @@ from IORT.configs import CHECKPOINT_PATH, CONTOURMode
 from IORT.segment_any.gpu_resource import GPUResource_Thread
 from IORT.anno import Object
 from skimage.draw.draw import polygon
+from IORT.widgets.polygon import Polygon
 import cv2
 import functools
 import torch
@@ -366,12 +367,12 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         self.labelCoord = QtWidgets.QLabel('')
         self.labelCoord.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
-        self.labelCoord.setFixedWidth(100)
+        self.labelCoord.setFixedWidth(130)
         self.statusbar.addPermanentWidget(self.labelCoord)
         
         self.labelData = QtWidgets.QLabel('')
         self.labelData.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
-        self.labelData.setFixedWidth(100)
+        self.labelData.setFixedWidth(130)
         self.statusbar.addPermanentWidget(self.labelData)
         
         self.model_manager_dialog = ModelManagerDialog(self, self)
@@ -713,8 +714,8 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
             
             self.current_group = 1
             self.current_label = Annotation(file_path, result_path, label_path)
-            self.current_label.load_annotation()
-
+            # self.current_label.load_annotation()
+            
             if self.current_label is not None:
                 self.setWindowTitle('{}'.format(self.current_label.label_path))
             else:
@@ -783,12 +784,14 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         if self.result_root == '':
             os.makedirs(self.result_root, exist_ok=True)
-        # self.current_label.objects.clear()
+        self.current_label.objects.clear()
+
         for polygon in self.polygons:
             objects = polygon.to_object()
             self.current_label.objects.append(objects)
+        
         self.current_label.save_annotation()
-        self.current_label.save_mask()
+        self.current_label.save_mask(self.scene.draw_mode)
         self.labelPaint.setText("Save annotation and mask finished!")
         self.set_save_state(True)
     

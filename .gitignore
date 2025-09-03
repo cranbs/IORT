@@ -1,6 +1,5 @@
 # 忽略 checkpoints 文件夹下的所有内容
 checkpoints/
-LaMa_test_images/
 outputs/
 
 # 但如果你想保留 checkpoints 目录结构，可以加一个空的 .gitkeep 文件

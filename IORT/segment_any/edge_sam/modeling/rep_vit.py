@@ -120,7 +120,7 @@ def _make_divisible(v, divisor, min_value=None):
     return new_v
 
 
-from timm.models.layers import SqueezeExcite
+from timm.layers import SqueezeExcite
 
 import torch
 

@@ -27,7 +27,6 @@ class Scene(QtWidgets.QGraphicsScene):
         self.pressed = False
         self.draw_interval = 0.15
         self.current_line = None
-        self.selected_polygons_list = list()
         self.guide_line_x:QtWidgets.QGraphicsLineItem = None
         self.guide_line_y:QtWidgets.QGraphicsLineItem = None
         self.click_points = []                              # SAM point prompt
@@ -35,7 +34,7 @@ class Scene(QtWidgets.QGraphicsScene):
         self.prompt_points = []
         self.masks: np.ndarray = None
         self.mask_alpha = 0.5
-        self.contour_mode = CONTOURMode.SAVE_EXTERNAL       # 默认SAM只保留外轮廓
+        self.contour_mode = CONTOURMode.SAVE_EXTERNAL    
         self.selected_polygons_list = list()
     
     def load_image(self, image_path: str):
@@ -60,6 +59,7 @@ class Scene(QtWidgets.QGraphicsScene):
     def unload_image(self):
         self.clear()
         self.setSceneRect(QtCore.QRectF())
+        self.mainwindow.polygons.clear()
         self.image_item = None
         self.mask_item = None
         self.current_graph = None
@@ -115,7 +115,7 @@ class Scene(QtWidgets.QGraphicsScene):
                 self.current_graph.addPoint(last_point)
                 self.current_graph.addPoint(QtCore.QPointF(last_point.x(), first_point.y()))
 
-            self.current_graph.set_drawed(QtGui.QColor('#00A0FF'))
+            self.current_graph.set_drawed(category="", group=0, iscrowd=False, note='', color=QtGui.QColor('#00A0FF'))
              
             # 设置为最高图层
             self.current_graph.setZValue(len(self.mainwindow.polygons)+1)
@@ -160,7 +160,7 @@ class Scene(QtWidgets.QGraphicsScene):
                         y = max(0.1, y)
                         self.current_graph.addPoint(QtCore.QPointF(x, y))
 
-                    self.current_graph.set_drawed(QtGui.QColor('#00A0FF'))
+                    self.current_graph.set_drawed(category="", group=0, iscrowd=False, note='', color=QtGui.QColor('#00A0FF'))
                     # 添加新polygon
                     self.mainwindow.polygons.append(self.current_graph)
 

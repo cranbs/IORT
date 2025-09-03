@@ -7,6 +7,7 @@ import numpy as np
 from json import load, dump
 from typing import List
 import cv2
+from IORT.configs import DRAWMode
 
 
 class Object:
@@ -54,7 +55,7 @@ class Annotation:
             print('Warning: Except image has 2 or 3 ndim, but get {}.'.format(image.ndim))
         del image
 
-        self.objects:List[Object,...] = []
+        self.objects = []
 
     def load_annotation(self):
         if os.path.exists(self.label_path):
@@ -119,9 +120,8 @@ class Annotation:
             dump(dataset, f, indent=4, ensure_ascii=False)
         return True
 
-    def save_mask(self):
+    def save_mask(self, draw_mode):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        
         for obj in self.objects:
             if obj.segmentation is not None and len(obj.segmentation) > 0:
                 pts = np.array(obj.segmentation, dtype=np.int32).reshape(-1, 2)
@@ -129,6 +129,17 @@ class Annotation:
             elif obj.bbox is not None:
                 x, y, w ,h = map(int, obj.bbox)
                 mask[y:y+h, x:x+w] = 1
-        Image.fromarray(mask * 255).save(self.result_path)
-        return True
+        
+        if draw_mode == DRAWMode.POLYGON: #polygon
+            Image.fromarray(mask * 255).save(self.result_path)
+            return True
+        elif draw_mode == DRAWMode.SEGMENTANYTHING: #segany
+            
+            # ---- 边缘扩展 10 像素 ----
+            kernel = np.ones((21, 21), np.uint8)  # 大小=2*10+1
+            dilated = cv2.dilate(mask, kernel, iterations=1)
+            Image.fromarray((dilated * 255).astype(np.uint8)).save(self.result_path)
+            return True
+        else:
+            return False
 
