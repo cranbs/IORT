@@ -6,11 +6,13 @@ import cv2
 from omegaconf import OmegaConf
 from LaMaProject.saicinpainting.evaluation.utils import move_to_device
 from LaMaProject.saicinpainting.training.trainers import load_checkpoint
+from LaMaProject.saicinpainting.evaluation.refinement import refine_predict
 
-def load_lama_model(model_path, checkpoint_name="best.ckpt", device="cpu"):
+def load_lama_model(model_path, checkpoint_name="best.ckpt"):
     """
     加载 LaMa 模型
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     train_config_path = os.path.join(model_path, "config.yaml")
     with open(train_config_path, 'r') as f:
         train_config = OmegaConf.create(yaml.safe_load(f))
@@ -25,7 +27,7 @@ def load_lama_model(model_path, checkpoint_name="best.ckpt", device="cpu"):
     model.to(device)
     return model, train_config
 
-def inpaint(image: np.ndarray, mask: np.ndarray, model, device="cpu", out_key="inpainted"):
+def inpaint(image: np.ndarray, mask: np.ndarray, model, refinement=False, out_key="inpainted"):
     """
     修复单张图片接口
     Args:
@@ -37,6 +39,8 @@ def inpaint(image: np.ndarray, mask: np.ndarray, model, device="cpu", out_key="i
     Returns:
         result: HWC, RGB, uint8
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
     if mask.ndim == 3:  # 转单通道
         mask = mask[..., 0]
     mask = (mask > 127).astype(np.uint8)
@@ -49,8 +53,13 @@ def inpaint(image: np.ndarray, mask: np.ndarray, model, device="cpu", out_key="i
     batch = move_to_device(batch, device)
 
     with torch.no_grad():
-        batch = model(batch)
-        cur_res = batch[out_key][0].permute(1, 2, 0).detach().cpu().numpy()
+        if refinement:
+            batch = model(batch)
+            cur_res = refine_predict(batch, model, gpu_ids=0, modulo=8, n_iters=15, lr=0.002, min_side=512, max_scales=3, px_budget=1800000)
+            cur_res = cur_res[0].permute(1,2,0).detach().cpu().numpy()
+        else:
+            batch = model(batch)
+            cur_res = batch[out_key][0].permute(1, 2, 0).detach().cpu().numpy()
 
     cur_res = np.clip(cur_res * 255, 0, 255).astype("uint8")
     return cur_res

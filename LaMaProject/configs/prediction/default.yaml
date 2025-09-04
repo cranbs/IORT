@@ -10,7 +10,7 @@ dataset:
   img_suffix: .png
   pad_out_to_modulo: 8
 
-device: cpu
+device: cuda
 out_key: inpainted
 
 refine: False # refiner will only run if this is True

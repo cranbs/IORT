@@ -2,7 +2,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from IORT.rect import Rect
 from enum import Enum
 from typing import List
-from IORT.widgets.polygon import Polygon, PromptPoint
+from IORT.widgets.polygon import Polygon, PromptPoint, Vertex
 from IORT.configs import STATUSMode, DRAWMode, CONTOURMode, CLICKMode
 import time
 from PIL import Image
@@ -166,6 +166,7 @@ class Scene(QtWidgets.QGraphicsScene):
 
                     self.current_graph = None
                 self.masks = None
+            self.cancel_draw()
             
         self.current_graph = None
 
@@ -184,6 +185,7 @@ class Scene(QtWidgets.QGraphicsScene):
         self.mainwindow.actionSave.setEnabled(False)
         self.mainwindow.actionObjectRemoval.setEnabled(False)
         self.mainwindow.actionSegment_anything_point.setEnabled(False)
+        self.mainwindow.actionChangeView.setEnabled(False)
         self.mainwindow.actionPolygon.setEnabled(False)
         self.mainwindow.actionFinish.setEnabled(True)
         self.mainwindow.actionCancel.setEnabled(True)
@@ -195,7 +197,7 @@ class Scene(QtWidgets.QGraphicsScene):
         self.mainwindow.actionPrevious_image.setEnabled(True)
         self.mainwindow.actionNext_image.setEnabled(True)
         self.mainwindow.actionSave.setEnabled(True)
-        self.mainwindow.actionObjectRemoval.setEnabled(True)
+        self.mainwindow.actionObjectRemoval.setEnabled(False)
         self.mainwindow.actionSegment_anything_point.setEnabled(True)
         self.mainwindow.actionPolygon.setEnabled(True)
     
@@ -270,14 +272,40 @@ class Scene(QtWidgets.QGraphicsScene):
         mask_pixmap = QtGui.QPixmap(mask_image)
         if self.mask_item is not None:
             self.mask_item.setPixmap(mask_pixmap)
-        
-        # mask_image = np.zeros(self.image_data.shape, dtype=np.uint8)
-        # mask_image = cv2.addWeighted(self.image_data, 1, mask_image, 0, 0)
-        # mask_image = QtGui.QImage(mask_image[:], mask_image.shape[1], mask_image.shape[0], mask_image.shape[1] * 3,
-        #                           QtGui.QImage.Format_RGB888)
-        # mask_pixmap = QtGui.QPixmap(mask_image)
-        # if self.mask_item is not None:
-        #     self.mask_item.setPixmap(mask_pixmap)
+    
+    def delete_selected_graph(self):
+        deleted_layer = None
+        for item in self.selectedItems():
+            if isinstance(item, Polygon) and (item in self.mainwindow.polygons):
+                if item in self.selected_polygons_list:
+                    self.selected_polygons_list.remove(item)
+                self.mainwindow.polygons.remove(item)
+                item.delete()
+                self.removeItem(item)
+                deleted_layer = item.zValue()
+                del item
+            elif isinstance(item, Vertex):
+                polygon = item.polygon
+                if polygon.vertices:
+                    index = polygon.vertices.index(item)
+                    item.polygon.removePoint(index)
+                else:
+                    self.removeItem(item)
+                    del item
+                # 如果剩余顶点少于三个，删除多边形
+                if len(polygon.vertices) < 3:
+                    if polygon in self.mainwindow.polygons:
+                        self.mainwindow.polygons.remove(polygon)
+                        polygon.delete()
+                    if polygon in self.items():
+                        self.removeItem(polygon)
+                    deleted_layer = polygon.zValue()
+                    del polygon
+
+        if deleted_layer is not None:
+            for p in self.mainwindow.polygons:
+                if p.zValue() > deleted_layer:
+                    p.setZValue(p.zValue() - 1)
     
     def mousePressEvent(self, event: 'QtWidgets.QGraphicsSceneMouseEvent'):
         pos = event.scenePos()

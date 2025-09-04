@@ -324,7 +324,7 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.image_root = ''
         self.result_root = ''
         self.files_list = []
-        self.mask_files_list = []
+        self.results_files_list = []
         self.current_label = '__mask__'
         self.current_group = 1
         self.current_index = None
@@ -613,6 +613,22 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.current_index is not None:
             self.show_image(self.current_index)
         
+        self.listWidget_results.clear()
+
+        files = []
+        suffixs = tuple(['{}'.format(fmt.data().decode('ascii').lower()) for fmt in QtGui.QImageReader.supportedImageFormats()])
+        for f in os.listdir(dir):
+            if f.lower().endswith(suffixs):
+                # f = os.path.join(dir, f)
+                files.append(f)
+        files = sorted(files)
+        self.results_files_list = files
+
+        for file_name in self.results_files_list:
+            item = QtWidgets.QListWidgetItem()
+            item.setText(file_name)
+            self.listWidget_results.addItem(item)
+        
     def open_image_dir(self):
         dir = QtWidgets.QFileDialog.getExistingDirectory(self)
         if not dir:
@@ -676,11 +692,12 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.actionPolygon.setEnabled(True)
             self.actionCancel.setEnabled(True)
-            self.checkBox_visible.setChecked(True)
-            self.actionVisible.setEnabled(True)
+            self.actionVisible.setEnabled(False)
             self.actionFitWindow.setEnabled(True)
             self.actionFinish.setEnabled(True)
-            self.actionSegment_anything_point.setEnabled(True)
+            self.actionSegment_anything_point.setEnabled(False)
+            self.actionObjectRemoval.setEnabled(False)
+            self.actionSave.setEnabled(False)
             
             paint_exists = os.path.exists(self.object_removal_path)
 
@@ -794,6 +811,7 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.current_label.save_mask(self.scene.draw_mode)
         self.labelPaint.setText("Save annotation and mask finished!")
         self.set_save_state(True)
+        self.actionObjectRemoval.setEnabled(True)
     
     def object_removal(self):
         if not self.saved:
@@ -875,5 +893,6 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSegment_anything_point.triggered.connect(self.scene.start_segment_anything)
         # self.actionVisible.triggered.connect()
         self.actionModel_manage.triggered.connect(self.model_manage)
+        self.actionDelete.triggered.connect(self.scene.delete_selected_graph)
         self.actionModel_manage.setStatusTip(CHECKPOINT_PATH)
         

@@ -6,13 +6,9 @@
 
 ## Polygon Mode
 
-***
-
 ![ObjectRemoval](./displays/ObjectRemoval.gif)
 
 ## Install
-
-***
 
 ```
 # create environment
@@ -27,8 +23,6 @@ pip install -r LaMaProject/requirements.txt
 
 ## Usage
 
-***
-
 Download the model checkpoints provided in [LaMa](https://github.com/advimman/lama) (big-lama) and put them into `./checkpoints`.  For simplicity, you can also go [here](https://drive.google.com/drive/folders/1B2x7eQDgecTL0oh3LSIBDGj0fTxs6Ips) directly download `big-lama` and put them into `./checkpoints`.
 
 ```
@@ -36,8 +30,6 @@ python main.py
 ```
 
 ## To Do
-
-***
 
 - [ ] add visible botton function
 - [ ] add revise mask function
