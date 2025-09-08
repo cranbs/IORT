@@ -120,7 +120,7 @@ class Annotation:
             dump(dataset, f, indent=4, ensure_ascii=False)
         return True
 
-    def save_mask(self, draw_mode):
+    def save_mask(self, draw_mode, reverse=False):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
         for obj in self.objects:
             if obj.segmentation is not None and len(obj.segmentation) > 0:
@@ -129,6 +129,9 @@ class Annotation:
             elif obj.bbox is not None:
                 x, y, w ,h = map(int, obj.bbox)
                 mask[y:y+h, x:x+w] = 1
+        
+        if reverse:
+            mask = 1 - mask
         
         if draw_mode == DRAWMode.POLYGON: #polygon
             Image.fromarray(mask * 255).save(self.result_path)

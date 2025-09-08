@@ -7,6 +7,7 @@ from omegaconf import OmegaConf
 from LaMaProject.saicinpainting.evaluation.utils import move_to_device
 from LaMaProject.saicinpainting.training.trainers import load_checkpoint
 from LaMaProject.saicinpainting.evaluation.refinement import refine_predict
+from PyQt5 import QtWidgets
 
 def load_lama_model(model_path, checkpoint_name="best.ckpt"):
     """
@@ -39,7 +40,12 @@ def inpaint(image: np.ndarray, mask: np.ndarray, model, refinement=False, out_ke
     Returns:
         result: HWC, RGB, uint8
     """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"   # Apple Silicon GPU
+    else:
+        device = "cpu"
     
     if mask.ndim == 3:  # 转单通道
         mask = mask[..., 0]
@@ -53,7 +59,7 @@ def inpaint(image: np.ndarray, mask: np.ndarray, model, refinement=False, out_ke
     batch = move_to_device(batch, device)
 
     with torch.no_grad():
-        if refinement:
+        if refinement and device == 'cuda':
             batch = model(batch)
             cur_res = refine_predict(batch, model, gpu_ids=0, modulo=8, n_iters=15, lr=0.002, min_side=512, max_scales=3, px_budget=1800000)
             cur_res = cur_res[0].permute(1,2,0).detach().cpu().numpy()

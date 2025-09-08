@@ -306,14 +306,15 @@ class InitSegAnyThread(QThread):
 class InpaintWorker(QThread):
     finished = pyqtSignal(object) 
 
-    def __init__(self, image, mask, model):
+    def __init__(self, image, mask, model, refinement=False):
         super().__init__()
         self.image = image
         self.mask = mask
         self.model = model
+        self.refinement = refinement
 
     def run(self):
-        result = inpaint(self.image, self.mask, self.model)
+        result = inpaint(self.image, self.mask, self.model, self.refinement)
         self.finished.emit(result)
 
 class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -614,6 +615,7 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.show_image(self.current_index)
         
         self.listWidget_results.clear()
+        self.update_widget(self.listWidget_results)
 
         files = []
         suffixs = tuple(['{}'.format(fmt.data().decode('ascii').lower()) for fmt in QtGui.QImageReader.supportedImageFormats()])
@@ -623,11 +625,18 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 files.append(f)
         files = sorted(files)
         self.results_files_list = files
+    
+    def update_widget(self, widget):
+        widget.clear()
+        if self.files_list is None:
+            return
 
-        for file_name in self.results_files_list:
+        for idx, file_name in enumerate(self.files_list):
             item = QtWidgets.QListWidgetItem()
-            item.setText(file_name)
-            self.listWidget_results.addItem(item)
+            item.setSizeHint(QtCore.QSize(200, 30))
+
+            item.setText(f'[{idx + 1}] {file_name}')
+            widget.addItem(item)
         
     def open_image_dir(self):
         dir = QtWidgets.QFileDialog.getExistingDirectory(self)
@@ -645,11 +654,8 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 files.append(f)
         files = sorted(files)
         self.files_list = files
-
-        for file_name in self.files_list:
-            item = QtWidgets.QListWidgetItem()
-            item.setText(file_name)
-            self.listWidgetFiles.addItem(item)
+        
+        self.update_widget(self.listWidgetFiles)
 
         self.current_index = 0
 
@@ -808,7 +814,10 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.current_label.objects.append(objects)
         
         self.current_label.save_annotation()
-        self.current_label.save_mask(self.scene.draw_mode)
+        if self.reverse_mask.isChecked():
+            self.current_label.save_mask(self.scene.draw_mode, reverse=True)
+        else:
+            self.current_label.save_mask(self.scene.draw_mode)
         self.labelPaint.setText("Save annotation and mask finished!")
         self.set_save_state(True)
         self.actionObjectRemoval.setEnabled(True)
@@ -826,7 +835,10 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         image = cv2.imread(img_path)[:, :, ::-1]  # BGR -> RGB
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
-        self.worker = InpaintWorker(image, mask, self.lama)
+        if self.refinement.isChecked():
+            self.worker = InpaintWorker(image, mask, self.lama, refinement=True)
+        else:
+            self.worker = InpaintWorker(image, mask, self.lama)
         self.worker.finished.connect(self.show_result)
         self.worker.start()
     
@@ -872,6 +884,10 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
     def model_manage(self):
         self.model_manager_dialog.show()
+    
+    def listwidgetfiles_doubleclick(self):
+        row = self.listWidgetFiles.currentRow()
+        self.show_image(row)
         
     def exit(self):
         
@@ -895,4 +911,6 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionModel_manage.triggered.connect(self.model_manage)
         self.actionDelete.triggered.connect(self.scene.delete_selected_graph)
         self.actionModel_manage.setStatusTip(CHECKPOINT_PATH)
+        
+        self.listWidgetFiles.clicked.connect(self.listwidgetfiles_doubleclick)
         
