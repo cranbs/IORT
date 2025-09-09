@@ -611,27 +611,34 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         self.result_root = dir
         self.actionOpen_save_dir.setStatusTip("Result root: {}".format(self.result_root))
-        if self.current_index is not None:
-            self.show_image(self.current_index)
+        # if self.current_index is not None:
+        #     self.show_image(self.current_index)
         
         self.listWidget_results.clear()
         self.update_widget(self.listWidget_results)
-
-        files = []
-        suffixs = tuple(['{}'.format(fmt.data().decode('ascii').lower()) for fmt in QtGui.QImageReader.supportedImageFormats()])
-        for f in os.listdir(dir):
-            if f.lower().endswith(suffixs):
-                # f = os.path.join(dir, f)
-                files.append(f)
-        files = sorted(files)
-        self.results_files_list = files
     
     def update_widget(self, widget):
         widget.clear()
-        if self.files_list is None:
+        
+        if widget == self.listWidget_results:
+            files = []
+            suffixs = tuple(['{}'.format(fmt.data().decode('ascii').lower()) for fmt in QtGui.QImageReader.supportedImageFormats()])
+            for f in os.listdir(self.result_root):
+                if f.lower().endswith(suffixs):
+                    # f = os.path.join(dir, f)
+                    files.append(f)
+            files = sorted(files)
+            self.results_files_list = files
+            files_list = self.results_files_list
+        elif widget == self.listWidgetFiles:
+            files_list = self.files_list
+        else:
+            return
+        
+        if files_list is None:
             return
 
-        for idx, file_name in enumerate(self.files_list):
+        for idx, file_name in enumerate(files_list):
             item = QtWidgets.QListWidgetItem()
             item.setSizeHint(QtCore.QSize(200, 30))
 
@@ -844,11 +851,12 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def show_result(self, result):
         paint_path = self.object_removal_path
-        self.labelPaint.setText("object removal finished!")
         
         cv2.imwrite(paint_path, result[:, :, ::-1])
         self.set_save_state(True)
         self.change_view()
+        self.update_widget(self.listWidget_results)
+        self.labelPaint.setText("object removal finished!")
         
     def set_save_state(self, is_saved:bool):
         self.saved = is_saved
@@ -888,6 +896,26 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def listwidgetfiles_doubleclick(self):
         row = self.listWidgetFiles.currentRow()
         self.show_image(row)
+    
+    def jump_to(self):
+        index = self.lineEdit_jump.text()
+        if index:
+            if not index.isdigit():
+                if index in self.files_list:
+                    index = self.files_list.index(index)+1
+                else:
+                    QtWidgets.QMessageBox.warning(self, 'Warning', 'Don`t exist image named: {}'.format(index))
+                    self.lineEdit_jump.clear()
+                    return
+            index = int(index)-1
+            if 0 <= index < len(self.files_list):
+                self.show_image(index)
+                self.lineEdit_jump.clear()
+            else:
+                QtWidgets.QMessageBox.warning(self, 'Warning', 'Index must be in [1, {}].'.format(len(self.files_list)))
+                self.lineEdit_jump.clear()
+                self.lineEdit_jump.clearFocus()
+                return
         
     def exit(self):
         
@@ -913,4 +941,5 @@ class Mainwindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionModel_manage.setStatusTip(CHECKPOINT_PATH)
         
         self.listWidgetFiles.clicked.connect(self.listwidgetfiles_doubleclick)
+        self.lineEdit_jump.returnPressed.connect(self.jump_to)
         
