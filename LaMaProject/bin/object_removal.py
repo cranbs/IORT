@@ -42,8 +42,6 @@ def inpaint(image: np.ndarray, mask: np.ndarray, model, refinement=False, out_ke
     """
     if torch.cuda.is_available():
         device = "cuda"
-    elif torch.backends.mps.is_available():
-        device = "mps"   # Apple Silicon GPU
     else:
         device = "cpu"
     
